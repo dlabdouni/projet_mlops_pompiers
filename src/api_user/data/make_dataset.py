@@ -65,7 +65,3 @@ def encode_dataframe(working_dataframe):
 data_db = load_data(result, columns)
 working_dataframe = transform_dataframe(data_db)
 df = encode_dataframe(working_dataframe)
-
-print(f"data_db : \n {data_db}")
-print(f"working_dataframe : \n {working_dataframe.head()}")
-print(f"df : \n {df.head()}")
