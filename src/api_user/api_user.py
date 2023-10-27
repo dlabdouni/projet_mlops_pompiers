@@ -9,7 +9,7 @@ import math
 from data.make_dataset import working_dataframe
 from api.schema import NewCall
 from api.users import verify_credentials
-from api.fonction import format_time
+from api.fonction import format_time, format_real_time
 
 from joblib import load
 
@@ -99,14 +99,22 @@ async def predict(new_call: NewCall):
     # Arrondir à la minute supérieure
     rounded_seconds = round(prediction_in_seconds)
     minutes = math.ceil(rounded_seconds / 60)
+    minutes_real= rounded_seconds // 60
+    seconds = rounded_seconds % 60
 
     # Formater le temps en "X mins" (minute supérieure)
     formatted_time = format_time(minutes)
-
-    response_text = f"Response time : {prediction_in_seconds} seconds. ({formatted_time})"
+    
+    formatted_real_time = format_real_time(minutes_real, seconds)
         
-    # Retourner la prédiction
-    return Response(content=response_text, media_type="text/plain")
+    
+
+    response_text = f"Estimated response time : {formatted_time}, (Real response time : {formatted_real_time})"
+
+    # Créez une réponse personnalisée avec l'auth_token dans les en-têtes
+    response = Response(content=response_text, media_type="text/plain")
+        
+    return response
 
 
 if __name__ == '__main__':    
