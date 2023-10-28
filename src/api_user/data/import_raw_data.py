@@ -23,6 +23,7 @@ connection.commit()
 
 # Requête SELECT pour récupérer les données
 select_query = """
+SELECT
     i.DateOfCall, i.HourOfCall, i.IncGeo_BoroughCode, i.IncGeo_WardCode,
     i.Easting_rounded, i.Northing_rounded, i.IncidentStationGround,
     i.NumStationsWithPumpsAttending, i.NumPumpsAttending, i.PumpCount, i.PumpHoursRoundUp,
@@ -31,6 +32,7 @@ FROM incident i
 RIGHT JOIN mobilisation m ON i.IncidentNumber = m.IncidentNumber
 WHERE i.DateOfCall IS NOT NULL AND i.PumpHoursRoundUp IS NOT NULL
 """
+
 
 # Exécution de la requête SELECT
 cursor.execute(select_query)

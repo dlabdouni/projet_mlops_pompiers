@@ -14,7 +14,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copier le reste du code source de l'application dans le conteneur
 COPY . .
 
-
 # Exposer le port que streamlit utilisera
 EXPOSE 8501
 
