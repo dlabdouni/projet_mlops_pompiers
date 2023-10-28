@@ -27,4 +27,5 @@ class NewCall(BaseModel):
     PumpOrder: int
     DelayCodeId: int
     Month: int = current_month  #Time Automation
+    
 
