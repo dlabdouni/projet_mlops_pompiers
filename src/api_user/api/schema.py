@@ -1,12 +1,18 @@
 from pydantic import BaseModel
 from datetime import datetime
+import pytz
 
+# Fuseau horaire de Paris
+paris_tz = pytz.timezone('Europe/Paris')
 
-# Créez une instance de NewCall avec l'heure actuelle et le mois actuel
-current_hour = int(datetime.now().hour)
-current_month = int(datetime.now().month)
+# Heure actuelle à Paris
+current_time_paris = datetime.now(paris_tz)
 
-# Classe new_call pour faire une prédiction.
+# Heure et mois actuels
+current_hour = current_time_paris.hour
+current_month = current_time_paris.month
+
+# Classe NewCall pour faire une prédiction.
 class NewCall(BaseModel):
     HourOfCall: int = current_hour  #Time Automation
     IncGeo_BoroughCode: str
@@ -20,4 +26,5 @@ class NewCall(BaseModel):
     PumpHoursRoundUp: int
     PumpOrder: int
     DelayCodeId: int
-    Month: int = current_month  #Month Automation
+    Month: int = current_month  #Time Automation
+
