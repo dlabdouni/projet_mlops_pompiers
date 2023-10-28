@@ -26,7 +26,8 @@ services:
       AWS_USER_KEY_ID: $AWS_USER_KEY_ID 
       AWS_USER_KEY: $AWS_USER_KEY 
       AWS_S3_REGION: $AWS_S3_REGION 
-      AWS_S3_BUCKET_NAME: $AWS_S3_BUCKET_NAME 
+      AWS_S3_BUCKET_NAME: $AWS_S3_BUCKET_NAME
+      TZ: Europe/Paris
 
   api_user:
     image: willymaillot87/pompiers_user-api:latest
@@ -51,7 +52,8 @@ services:
       AWS_USER_KEY_ID: $AWS_USER_KEY_ID 
       AWS_USER_KEY: $AWS_USER_KEY 
       AWS_S3_REGION: $AWS_S3_REGION 
-      AWS_S3_BUCKET_NAME: $AWS_S3_BUCKET_NAME 
+      AWS_S3_BUCKET_NAME: $AWS_S3_BUCKET_NAME
+      TZ: Europe/Paris 
 
   streamlit_app:
     image: willymaillot87/pompiers_streamlit:latest
@@ -61,6 +63,8 @@ services:
       - mynetwork
     volumes:
       - ./requirements.txt:/app/requirements.txt
+    environment:
+      TZ: Europe/Paris
     depends_on:
       - api_user
       - api_admin
