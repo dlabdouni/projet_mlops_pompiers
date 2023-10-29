@@ -15,11 +15,26 @@ Project Organization
     ├── .github\workflows
     │     └── python-app.yml
     ├── airflow
+    │   ├── config
     │   ├── dags
-    │   │   └── dag_mlops_pompiers.py
+    │   │   ├── dag_mlops_pompiers.py
+    │   │   └── __pycache__
+    │   │       └── dag_mlops_pompiers.cpython-38.pyc
     │   ├── docker-compose.yaml
-    │   └── models
-    │       └── null_file.json
+    │   ├── logs
+    │   │   ├── dag_id=ALL-model_training_workflow
+    │   │   ├── dag_processor_manager
+    │   │   │   └── dag_processor_manager.log
+    │   │   └── scheduler
+    │   │       └── 2023-10-27
+    │   │           ├── dag_mlops_pompiers.py.log
+    │   │           └── native_dags
+    │   │               └── example_dags
+    │   ├── mlflow
+    │   │   └── null_file.json
+    │   ├── models
+    │   │   └── null_file.json
+    │   └── plugins
     ├── docker-compose.yml
     ├── LICENSE
     ├── models
@@ -31,7 +46,6 @@ Project Organization
     ├── README.md
     ├── references
     │   ├── Cahier des charges LFB.docx
-    │   ├── Diagram-light.png
     │   ├── Diagram-MLOps-pompiers
     │   ├── Diagram-MLOps-pompiers.drawio.png
     │   ├── Metadata
@@ -39,47 +53,56 @@ Project Organization
     │   │   └── Mobilisations Metadata.xlsx
     │   └── Prédiction du temps de réponse des pompiers.docx
     ├── requirements.txt
-    └── src
-        ├── api_admin
-        │   ├── api
-        │   │   ├── __init__.py
-        │   │   ├── schema.py
-        │   │   └── users.py
-        │   ├── api_admin.py
-        │   ├── data
-        │   │   ├── import_raw_data.py
-        │   │   ├── __init__.py
-        │   │   ├── make_dataset.py
-        │   ├── Dockerfile
-        │   ├── models_training
-        │   │   ├── __init__.py
-        │   │   ├── model.py
-        │   ├── __pycache__
-        │   │   ├── api_admin.cpython-310.pyc
-        │   │   └── test_api_admin.cpython-310-pytest-7.4.0.pyc
-        │   ├── requirements.txt
-        │   ├── test_api_admin.py
-        │   └── tests
-        │       ├── __init__.py
-        │       ├── test_import_raw_data.py
-        │       └── test_model.py
-        └── api_user
-            ├── api
-            │   ├── fonction.py
-            │   ├── __init__.py
-            │   ├── schema.py
-            │   └── users.py
-            ├── api_user.py
-            ├── data
-            │   ├── import_raw_data.py
-            │   ├── __init__.py
-            │   └── make_dataset.py
-            ├── Dockerfile
-            ├── models_training
-            │   ├── __init__.py
-            │   └── model.py
-            ├── requirements.txt
-            └── test_api_user.py
+    ├── src
+    │   ├── api_admin
+    │   │   ├── api
+    │   │   │   ├── __init__.py
+    │   │   │   ├── schema.py
+    │   │   │   └── users.py
+    │   │   ├── api_admin.py
+    │   │   ├── data
+    │   │   │   ├── import_raw_data.py
+    │   │   │   ├── __init__.py
+    │   │   │   ├── make_dataset.py
+    │   │   ├── Dockerfile
+    │   │   ├── models_training
+    │   │   │   ├── __init__.py
+    │   │   │   ├── model.py
+    │   │   ├── requirements.txt
+    │   │   ├── test_api_admin.py
+    │   │   └── tests
+    │   │       ├── __init__.py
+    │   │       ├── test_import_raw_data.py
+    │   │       └── test_model.py
+    │   └── api_user
+    │       ├── api
+    │       │   ├── fonction.py
+    │       │   ├── __init__.py
+    │       │   ├── schema.py
+    │       │   └── users.py
+    │       ├── api_user.py
+    │       ├── data
+    │       │   ├── import_raw_data.py
+    │       │   ├── __init__.py
+    │       │   ├── make_dataset.py
+    │       ├── Dockerfile
+    │       ├── models_training
+    │       │   ├── __init__.py
+    │       │   └── model.py
+    │       ├── requirements.txt
+    │       └── test_api_user.py
+    └── streamlit_app
+        ├── app.py
+        ├── assets
+        ├── blason_LFB_1.png
+        ├── Dockerfile
+        ├── Image panier.png
+        ├── requirements.txt
+        ├── style.css
+        └── tabs
+            ├── credits.py
+            ├── intro.py
+            ├── pred_time.py
 
 
 
@@ -144,6 +167,7 @@ The admin has access to the Airflow interface, where DAGs allow regular model ev
 **Streamlit :**
 
 A Streamlit interface has been created for the user to facilitate testing of the application.
+The Streamlit App is available on port 8501.
 
 ------------
 
