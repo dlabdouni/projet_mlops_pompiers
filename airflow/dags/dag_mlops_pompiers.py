@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.operators.python_operator import PythonOperator
 import os
 import mysql.connector
 from joblib import dump
@@ -13,6 +13,18 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+import mlflow
+
+from sklearn.linear_model import Ridge
+from sklearn.linear_model import Lasso
+from sklearn.linear_model import ElasticNet
+from sklearn.linear_model import Lars
+from sklearn.linear_model import OrthogonalMatchingPursuit
+from sklearn.linear_model import BayesianRidge
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import SGDRegressor
 
 
 def prepare_data(df):
@@ -23,7 +35,7 @@ def prepare_data(df):
     '''
     X = df.drop('AttendanceTimeSeconds', axis=1)
     y = df['AttendanceTimeSeconds']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
     sc = MinMaxScaler()
     X_train = sc.fit_transform(X_train)
     X_test = sc.transform(X_test)
@@ -49,7 +61,7 @@ default_args = {
 
 
 dag = DAG(
-    'ALL-model_training_workflow',
+    'model_training_workflow',
     default_args=default_args,
     description='DAG pour le workflow d\'entraînement de modèle',
     schedule_interval=timedelta(minutes=30),  # Exécution toutes les demi-heures
@@ -166,85 +178,138 @@ create_dataset_task = PythonOperator(
 )
 
 
-def train_models(ti, **kwargs):
+def train_and_evaluate_models(ti, **kwargs):
     df_json = ti.xcom_pull(task_ids='create_dataset', key='transformed_data')
     df = pd.read_json(df_json)
 
     # Préparation des données :
     X = df.drop('AttendanceTimeSeconds', axis=1)
     y = df['AttendanceTimeSeconds']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
     scaler = MinMaxScaler()
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
-    # Entrainement des modèles
-    models = {
-        "LinearRegression": LinearRegression(),
-        "RandomForestRegressor": RandomForestRegressor(n_estimators=200, max_depth=20, random_state=42, n_jobs=-1)
+    model_hyperparameters = {
+    "LinearRegression": [],
+    "SGDR": ["alpha", "loss", "penalty", "learning_rate"],
+    "BR": ["alpha_1", "alpha_2", "lambda_1", "lambda_2"],
+    "OMP": ["n_nonzero_coefs", "tol"],
+    "Lars": ["n_nonzero_coefs", "fit_intercept"],
+    "Elasticnet": ["alpha", "l1_ratio"],
+    "Lasso": ["alpha"],
+    "Ridge": ["alpha"]
     }
 
-    model_paths = {}
-    for model_name, model in models.items():
-        # Training
-        model.fit(X_train, y_train)
-        
-        # Save the model
-        model_path = f'/tmp/{model_name}.joblib'
-        dump(model, model_path)
-        model_paths[model_name] = model_path
+    default_hyperparameters = {
+    "LinearRegression": {},
+    "SGDR": {
+        "alpha": 1.0,
+        "loss": "squared_error",
+        "penalty": "l2",
+        "learning_rate": "invscaling"
+    },
+    "BR": {
+        "alpha_1": 1e-6,
+        "alpha_2": 1e-6,
+        "lambda_1": 1e-6,
+        "lambda_2": 1e-6
+    },
+    "OMP": {
+        "n_nonzero_coefs": None,
+        "tol": 1e-3
+    },
+    "Lars": {},
+    "Elasticnet": {
+        "alpha": 1.0,
+        "l1_ratio": 0.5
+    },
+    "Lasso": {
+        "alpha": 1.0
+    },
+    "Ridge": {
+        "alpha": 1.0
+    }
+    
+    }
 
-    ti.xcom_push(key='model_paths', value=model_paths)
-    ti.xcom_push(key='X_test', value=X_test.tolist())  # Storing as a list for simplicity
-    ti.xcom_push(key='y_test', value=y_test.tolist())  # Storing as a list for simplicity
+    # Classes des modèles
+    model_classes = {
+    "LinearRegression": LinearRegression,
+    "SGDR": SGDRegressor,
+    "BR": BayesianRidge,
+    "OMP": OrthogonalMatchingPursuit,
+    "Lars": Lars,
+    "Elasticnet": ElasticNet,
+    "Lasso": Lasso,
+    "Ridge": Ridge
+    }
 
 
-train_models_task = PythonOperator(
-    task_id='train_models',
-    python_callable=train_models,
-    provide_context=True,
-    dag=dag,
-)
-
-
-def evaluate_models(ti, **kwargs):
-    model_paths = ti.xcom_pull(task_ids='train_models', key='model_paths')
-    X_test = np.array(ti.xcom_pull(task_ids='train_models', key='X_test'))
-    y_test = np.array(ti.xcom_pull(task_ids='train_models', key='y_test'))
+    models = {name: model_class(**default_hyperparameters[name]) for name, model_class in model_classes.items()}
 
     model_metrics = {}
-    for model_name, model_path in model_paths.items():
-        model = joblib.load(model_path)
-        
-        # Prediction
-        y_pred = model.predict(X_test)
-        
-        # Evaluation
-        mse = mean_squared_error(y_test, y_pred)
-        mae = mean_absolute_error(y_test, y_pred)
-        r2 = r2_score(y_test, y_pred)
-        rmse = np.sqrt(mse)
+    mlflow.set_tracking_uri("http://mlflow:5000")
 
-        model_metrics[model_name] = {
-            "MSE": mse,
-            "MAE": mae,
-            "R2": r2,
-            "RMSE": rmse
-        }
+    #now = datetime.now()
+    #formatted_now = now.strftime('%Y-%m-%d %H:%M:%S')
+    #run_name = f"Model Training and Evaluation {formatted_now}"
+
+    model_paths = {}
+
+    for model_name, model in models.items():
+        with mlflow.start_run(run_name=model_name):
+            # Training
+            model.fit(X_train, y_train)
+
+            # Save the model
+            model_path = f'/tmp/{model_name}.joblib'
+            dump(model, model_path)
+            model_paths[model_name] = model_path
+
+            # Evaluation
+            y_pred = model.predict(X_test)
+            mse = mean_squared_error(y_test, y_pred)
+            mae = mean_absolute_error(y_test, y_pred)
+            r2 = r2_score(y_test, y_pred)
+            rmse = np.sqrt(mse)
+            
+            model_metrics[model_name] = {
+                "MSE": mse,
+                "MAE": mae,
+                "R2": r2,
+                "RMSE": rmse
+            }
+            
+            # Logging parameters, metrics, and model
+            mlflow.log_param("Model", model_name)
+            for param_name, param_value in default_hyperparameters[model_name].items():
+                mlflow.log_param(param_name, param_value)
+            
+            mlflow.log_metric("MSE", mse)
+            mlflow.log_metric("MAE", mae)
+            mlflow.log_metric("R2", r2)
+            mlflow.log_metric("RMSE", rmse)
+            
+            mlflow.sklearn.log_model(model, f"models/{model_name}")
 
     ti.xcom_push(key='model_metrics', value=model_metrics)
 
+    # Après la boucle
+    ti.xcom_push(key='model_paths', value=model_paths)
 
-evaluate_models_task = PythonOperator(
-    task_id='evaluate_models',
-    python_callable=evaluate_models,
+    
+
+
+train_and_evaluate_models_task = PythonOperator(
+    task_id='train_and_evaluate_models',
+    python_callable=train_and_evaluate_models,
     provide_context=True,
     dag=dag,
 )
 
-
 def select_best_model(ti):
-    model_metrics = ti.xcom_pull(task_ids='evaluate_models', key='model_metrics')
+    model_metrics = ti.xcom_pull(task_ids='train_and_evaluate_models', key='model_metrics')
     
     best_model_name = min(model_metrics, key=lambda k: model_metrics[k]['RMSE'])
     ti.xcom_push(key='best_model_name', value=best_model_name)
@@ -260,11 +325,11 @@ select_best_model_task = PythonOperator(
 
 def export_best_model(ti):
     best_model_name = ti.xcom_pull(task_ids='select_best_model', key='best_model_name')
-    model_paths = ti.xcom_pull(task_ids='train_models', key='model_paths')
+    model_paths = ti.xcom_pull(task_ids='train_and_evaluate_models', key='model_paths')
     best_model_path = model_paths[best_model_name]
     
     best_model = joblib.load(best_model_path)
-    export_path = f'/app/models/{best_model_name}.joblib'
+    export_path = f'/app/models/best_model.joblib'
     joblib.dump(best_model, export_path)
 
 
@@ -276,4 +341,4 @@ export_best_model_task = PythonOperator(
 )
 
 
-load_raw_data_task >> create_dataset_task >> train_models_task >> evaluate_models_task >> select_best_model_task >> export_best_model_task
+load_raw_data_task >> create_dataset_task >> train_and_evaluate_models_task >> select_best_model_task >> export_best_model_task
