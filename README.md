@@ -171,5 +171,22 @@ The Streamlit App is available on port 8501.
 
 ------------
 
+How to use it ?
+------------
+After cloning the repository to your machine, run the following command:
 
+`docker compose up -d`
+
+In your browser, you will have access to the 3 services:
+- **api_admin** at the address **localhost:8002**
+- **api_user** at the address **localhost:8001**
+- **streamlit_app** at the address **localhost:8501**
+
+To access Airflow and MLFlow, run the following commands:
+
+`cd airflow`
+
+`docker-compose up -d`
+
+------------
 
