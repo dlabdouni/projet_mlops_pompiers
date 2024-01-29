@@ -10,7 +10,7 @@ def run():
 
 
     # URL de l'API FastAPI
-    api_url = "http://api_user:8001" 
+    api_url = "http://0.0.0.0:8001" 
 
     # Fonction pour effectuer l'authentification
     def authenticate(username, password):
